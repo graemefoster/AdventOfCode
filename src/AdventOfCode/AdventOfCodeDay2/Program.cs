@@ -1,4 +1,3 @@
-using System.Buffers;
 using AdventOfCode;
 
 var result = File.ReadAllLines("./input.txt")

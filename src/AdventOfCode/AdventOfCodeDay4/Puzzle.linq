@@ -1,8 +1,5 @@
 <Query Kind="Statements" />
 
-// See https://aka.ms/new-console-template for more information
-
-
 using var input = new StreamReader(File.OpenRead(@"C:\code\github\graemefoster\AdventOfCode\src\AdventOfCode\AdventOfCodeDay4\Input.txt"));
 var numberSequence = input.ReadLine().Split(',').Select(x => int.Parse(x)).ToArray();
 var boards = BuildBoards(input);

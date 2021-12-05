@@ -4,19 +4,27 @@ using var input = new StreamReader(File.OpenRead(@"C:\code\github\graemefoster\A
 var numberSequence = input.ReadLine().Split(',').Select(x => int.Parse(x)).ToArray();
 var boards = BuildBoards(input);
 
-var bingo = new List<(int boardNumber, (int col, int row, int number)[] board)>();
+var bingo = new List<(int BoardNumber, (int col, int row, int number)[] Board)>();
 
 Enumerable.Range(1, numberSequence.Length)
-	.SelectMany(idx => (
-		from board in boards.Where(b => !IsBingo(b.board, numberSequence[..(idx - 1)]).bingo)
-		let bingo = IsBingo(board.board, numberSequence[..idx])
-		where bingo.bingo
-		select (boardNumber: board.boardNumber, lastNumber: numberSequence[idx - 1], answer: bingo.unmarked.Sum() * numberSequence[idx - 1]))
-		)
-		.Dump();
+	.Select(idx => new
+	{
+		NumbersCalled = idx,
+		CalledNumber = numberSequence[idx - 1],
+		BingoBoards = from board in boards.Where(b => !BoardResult(b.Board, numberSequence[..(idx - 1)]).Bingo)
+					  let result = BoardResult(board.Board, numberSequence[..idx])
+					  where result.Bingo
+					  select new
+					  {
+						  BoardNumber = board.BoardNumber,
+						  PuzzleAnswer = result.Unmarked.Sum() * numberSequence[idx - 1]
+					  }
+	})
+	.Where(number => number.BingoBoards.Any()) //make output nicer
+	.Dump();
 
 
-List<(int boardNumber, (int col, int row, int number)[] board)> BuildBoards(StreamReader reader)
+List<(int BoardNumber, (int col, int row, int number)[] Board)> BuildBoards(StreamReader reader)
 {
 	var boards = new List<(int, (int col, int row, int number)[])>();
 	do
@@ -27,7 +35,7 @@ List<(int boardNumber, (int col, int row, int number)[] board)> BuildBoards(Stre
 	return boards;
 }
 
-(int col, int row, int number)[] BuildBoard(StreamReader reader)
+(int Col, int Row, int Number)[] BuildBoard(StreamReader reader)
 {
 	return Enumerable.Range(1, 5)
 	.Select(e => input.ReadLine()!)
@@ -35,9 +43,10 @@ List<(int boardNumber, (int col, int row, int number)[] board)> BuildBoards(Stre
 
 }
 
-(bool bingo, IEnumerable<int> unmarked) IsBingo((int col, int row, int number)[] cells, int[] calledNumbers)
+(bool Bingo, IEnumerable<int> Unmarked) BoardResult((int col, int row, int number)[] cells, int[] calledNumbers)
 {
 	var marked = calledNumbers.SelectMany(n => cells.Where(cell => cell.number == n));
+	
 	var bingoRow = new[] { 0, 1, 2, 3, 4 }.Select(row => marked.Count(markedNumber => markedNumber.row == row) == 5).Any(x => x);
 	var bingoCol = new[] { 0, 1, 2, 3, 4 }.Select(column => marked.Count(markedNumber => markedNumber.col == column) == 5).Any(x => x);
 

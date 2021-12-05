@@ -46,7 +46,7 @@ class BingoBoard
 
 	public static BingoBoard Parse(int boardNumber, params string[] lines)
 	{
-		return new BingoBoard(boardNumber, lines.Select(line => line.Split(' ').Where(x => x.Trim() != "").Select(num => int.Parse(num.Trim())).ToArray()).ToArray());
+		return new BingoBoard(boardNumber, lines.Select(line => line.Split(' ').Where(l => l.Trim() != "").Select(num => int.Parse(num)).ToArray()).ToArray());
 	}
 
 	public IEnumerable<(int col, int row, int number)> Bingo(int[] calledNumbers, out bool bingo)

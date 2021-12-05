@@ -39,14 +39,20 @@ List<(int BoardNumber, (int col, int row, int number)[] Board)> BuildBoards(Stre
 {
 	return Enumerable.Range(1, 5)
 	.Select(e => input.ReadLine()!)
-	.SelectMany((row, rowIdx) => row.Split(' ').Where(r => r.Trim() != "").Select((cell, colIdx) => (col: colIdx, row: rowIdx, int.Parse(cell.Trim())))).ToArray();
+	.Where(e => !string.IsNullOrWhiteSpace(e))
+	.SelectMany((row, rowIdx) =>
+		row.Split(' ')
+		.Where(r => r != "")
+		.Select((cell, colIdx) => (col: colIdx, row: rowIdx, int.Parse(cell.Trim())))
+	)
+	.ToArray();
 
 }
 
 (bool Bingo, IEnumerable<int> Unmarked) BoardResult((int col, int row, int number)[] cells, int[] calledNumbers)
 {
 	var marked = calledNumbers.SelectMany(n => cells.Where(cell => cell.number == n));
-	
+
 	var bingoRow = new[] { 0, 1, 2, 3, 4 }.Select(row => marked.Count(markedNumber => markedNumber.row == row) == 5).Any(x => x);
 	var bingoCol = new[] { 0, 1, 2, 3, 4 }.Select(column => marked.Count(markedNumber => markedNumber.col == column) == 5).Any(x => x);
 

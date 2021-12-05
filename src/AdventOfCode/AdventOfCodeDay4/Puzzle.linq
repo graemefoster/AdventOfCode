@@ -5,64 +5,65 @@
 
 using var input = new StreamReader(File.OpenRead(@"C:\code\github\graemefoster\AdventOfCode\src\AdventOfCode\AdventOfCodeDay4\Input.txt"));
 var numberSequence = input.ReadLine().Split(',').Select(x => int.Parse(x)).ToArray();
-var boards = new List<BingoBoard>();
-do
-{
-	input.ReadLine();
-	boards.Add(BingoBoard.Parse(
-		boards.Count + 1,
-		Enumerable.Range(1,5).Select(e => input.ReadLine()!).ToArray()
-	));
-} while (!input.EndOfStream);
+var boards = BuildBoards(input);
 
-//Play bingo
-var boardsStillPlaying = boards.ToList();
+var bingo = new List<(int boardNumber, (int col, int row, int number)[] board)>();
 for (var idx = 1; idx <= numberSequence.Length; idx++)
 {
-	foreach (var board in boardsStillPlaying.ToList())
+	foreach(var board in boards.Except(bingo)) 
 	{
-		var markedBoard = board.Bingo(numberSequence[..idx], out var bingo);
-		if (bingo)
+		var result = IsBingo(board.board, numberSequence[..idx]);
+		if (result.bingo)
 		{
-			boardsStillPlaying.Remove(board);
-			var unmarked = board.Unmarked(numberSequence[..idx]);
-			var puzzleAnswer = unmarked.Sum(u => u.number) * numberSequence[idx - 1];
-			markedBoard.Dump($"Board in after {idx} numbers! Board {board.BoardNumber}. Puzzle answer:{puzzleAnswer}");
+			(result.unmarked.Sum(num => num) * numberSequence[idx - 1]).Dump($"BINGO board {board.boardNumber}!");
+			bingo.Add(board);
+			break;
 		}
 	}
 }
 
-
-class BingoBoard
+for (var idx = 1; idx <= numberSequence.Length; idx++)
 {
-	private (int col, int row, int number)[] _cells;
-	public int BoardNumber { get;}
-
-	public BingoBoard(int boardNumber, int[][] lines)
+	bool keepGoing = true;
+	foreach (var board in boards)
 	{
-		_cells = lines.SelectMany((row, rowIdx) => row.Select((cell, colIdx) => (colIdx, rowIdx, cell))).ToArray();
-		BoardNumber = boardNumber;
+		var result = IsBingo(board.board, numberSequence[..idx]);
+		if (result.bingo)
+		{
+			(result.unmarked.Sum(num => num) * numberSequence[idx - 1]).Dump("Puzzle 1");
+			keepGoing = false;
+			break;
+		}
 	}
-
-	public static BingoBoard Parse(int boardNumber, params string[] lines)
-	{
-		return new BingoBoard(boardNumber, lines.Select(line => line.Split(' ').Where(l => l.Trim() != "").Select(num => int.Parse(num)).ToArray()).ToArray());
-	}
-
-	public IEnumerable<(int col, int row, int number)> Bingo(int[] calledNumbers, out bool bingo)
-	{
-		var marked = calledNumbers.SelectMany(n => _cells.Where(cell => cell.number == n));
-
-		var bingoRow = new[] { 0, 1, 2, 3, 4 }.Select(row => marked.Count(markedNumber => markedNumber.row == row) == 5).Any(x => x);
-		var bingoCol = new[] { 0, 1, 2, 3, 4 }.Select(column => marked.Count(markedNumber => markedNumber.col == column) == 5).Any(x => x);
-
-		bingo = bingoRow || bingoCol;
-		return marked;
-	}
-
-	public IEnumerable<(int col, int row, int number)> Unmarked(int[] calledNumbers)
-	{
-		return _cells.Except(Bingo(calledNumbers, out _));
-	}
-
+	if (!keepGoing) break;
 }
+
+
+List<(int boardNumber, (int col, int row, int number)[] board)> BuildBoards(StreamReader reader)
+{
+	var boards = new List<(int, (int col, int row, int number)[])>();
+	do
+	{
+		input.ReadLine();
+		boards.Add((boards.Count + 1, BuildBoard(input)));
+	} while (!input.EndOfStream);
+	return boards;
+}
+
+(int col, int row, int number)[] BuildBoard(StreamReader reader) 
+{
+	return Enumerable.Range(1,5)
+	.Select(e => input.ReadLine()!)
+	.SelectMany((row, rowIdx) => row.Split(' ').Where(r => r.Trim() != "").Select((cell, colIdx) => (col: colIdx, row: rowIdx, int.Parse(cell.Trim())))).ToArray();
+		
+}
+
+(bool bingo, IEnumerable<int> unmarked) IsBingo((int col, int row, int number)[] cells, int[] calledNumbers) 
+{
+	var marked = calledNumbers.SelectMany(n => cells.Where(cell => cell.number == n));
+	var bingoRow = new[] { 0, 1, 2, 3, 4 }.Select(row => marked.Count(markedNumber => markedNumber.row == row) == 5).Any(x => x);
+	var bingoCol = new[] { 0, 1, 2, 3, 4 }.Select(column => marked.Count(markedNumber => markedNumber.col == column) == 5).Any(x => x);
+
+	return (bingoRow || bingoCol, (cells.Where(c => !calledNumbers.Contains(c.number)).Select(c => c.number)));
+}
+
